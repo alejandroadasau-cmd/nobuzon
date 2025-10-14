@@ -341,7 +341,66 @@ export default function Index() {
             }
           }}
         >
-          <TabsList className="bg-emerald-100/50" />
+          <TabsList className="bg-emerald-100/50">
+            <TabsTrigger value="nuevo">Nuevo proceso</TabsTrigger>
+            <TabsTrigger value="generar">Bitácora</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="nuevo" className="mt-6">
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,480px)_1fr]">
+              <div className="rounded-lg border bg-card p-6 shadow-sm">
+                <h3 className="text-lg font-semibold text-sky-900">
+                  Configura el nuevo proceso
+                </h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Indica el ejercicio y el mes que se procesará.
+                </p>
+                <form className="mt-6 space-y-5" onSubmit={handleSubmitNuevoProceso}>
+                  <div className="space-y-2">
+                    <Label htmlFor="ejercicio">Ejercicio</Label>
+                    <Input
+                      id="ejercicio"
+                      value={formYear}
+                      onChange={(event) => setFormYear(event.target.value)}
+                      placeholder="2025"
+                      inputMode="numeric"
+                      maxLength={4}
+                    />
+                    {formErrors.year ? (
+                      <p className="text-sm text-destructive">{formErrors.year}</p>
+                    ) : null}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="mes">Mes</Label>
+                    <Select value={formMonth} onValueChange={setFormMonth}>
+                      <SelectTrigger id="mes">
+                        <SelectValue placeholder="Selecciona un mes" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {MONTH_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {formErrors.month ? (
+                      <p className="text-sm text-destructive">{formErrors.month}</p>
+                    ) : null}
+                  </div>
+                  <Button
+                    type="submit"
+                    className="w-full md:w-auto"
+                    disabled={
+                      (generate as any).isPending || (generate as any).isLoading
+                    }
+                  >
+                    Iniciar proceso
+                  </Button>
+                </form>
+              </div>
+            </div>
+          </TabsContent>
 
           <TabsContent value="generar" className="mt-0">
             <div className="flex items-center justify-between mb-0">
