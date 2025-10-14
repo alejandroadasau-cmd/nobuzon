@@ -412,10 +412,7 @@ export default function Index() {
                 variant="default"
                 size="sm"
                 className="text-sm px-3 py-2"
-                disabled={
-                  (generate as any).isPending || (generate as any).isLoading
-                }
-                onClick={handleGenerateClick}
+                onClick={() => setTabValue("nuevo")}
               >
                 Nuevo proceso
               </Button>
