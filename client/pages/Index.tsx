@@ -32,7 +32,7 @@ import {
 } from "@/hooks/useSITData";
 import { useNavigate } from "react-router-dom";
 import { formatCurrencyMXN, formatRFC, formatDate } from "@/lib/formatters";
-import type { TaxType } from "@shared/api";
+import type { GenerateRequestPayload, TaxType } from "@shared/api";
 import { toast } from "@/hooks/use-toast";
 import { CheckCircle, XCircle, Clock } from "lucide-react";
 
