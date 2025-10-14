@@ -79,6 +79,10 @@ export default function Index() {
   const navigate = useNavigate();
   const [selectedBatch, setSelectedBatch] = useState<any | null>(null);
   const [viewOpen, setViewOpen] = useState(false);
+  const [tabValue, setTabValue] = useState<"generar" | "nuevo">("nuevo");
+  const [formYear, setFormYear] = useState("");
+  const [formMonth, setFormMonth] = useState("");
+  const [formErrors, setFormErrors] = useState<{ year?: string; month?: string }>({});
 
   const totalPending = pending.length;
   const allIds = useMemo(() => pending.map((p) => p.id), [pending]);
