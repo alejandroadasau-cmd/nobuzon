@@ -333,7 +333,14 @@ export default function Index() {
           <GeneracionMasivaHeader />
         </div>
 
-        <Tabs defaultValue="generar">
+        <Tabs
+          value={tabValue}
+          onValueChange={(value) => {
+            if (value === "generar" || value === "nuevo") {
+              setTabValue(value as "generar" | "nuevo");
+            }
+          }}
+        >
           <TabsList className="bg-emerald-100/50" />
 
           <TabsContent value="generar" className="mt-0">
