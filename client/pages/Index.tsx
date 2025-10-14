@@ -113,7 +113,9 @@ export default function Index() {
   };
 
   // Start generation and navigate to processing screen
-  const handleGenerateClick = async () => {
+  const handleGenerateClick = async (
+    period?: { year: number; month: number },
+  ) => {
     // refresh pending ids from server when generating
     let ids = allIds;
     try {
@@ -133,12 +135,21 @@ export default function Index() {
 
     try {
       // trigger generation on server
-      const result = await generate.mutateAsync({
+      const payload: GenerateRequestPayload = {
         ids,
         observation: observation.trim() || undefined,
         generatedBy: generatedBy.trim() || undefined,
         extraRequirementTypes: extraTypesSelected,
-      });
+      };
+      if (period) {
+        const { periodStart, periodEnd } = toMonthPeriod(
+          period.year,
+          period.month,
+        );
+        payload.periodStart = periodStart;
+        payload.periodEnd = periodEnd;
+      }
+      const result = await generate.mutateAsync(payload);
 
       const batch = result?.batch;
       const generatedItems = Array.isArray(result?.generated)
@@ -208,6 +219,51 @@ export default function Index() {
         description: "Error al generar requerimientos.",
         variant: "destructive",
       });
+      throw err;
+    }
+  };
+
+  const handleSubmitNuevoProceso = async (
+    event: FormEvent<HTMLFormElement>,
+  ) => {
+    event.preventDefault();
+    if ((generate as any).isPending || (generate as any).isLoading) return;
+
+    const trimmedYear = formYear.trim();
+    const errors: { year?: string; month?: string } = {};
+    const yearNumber = Number(trimmedYear);
+
+    if (!trimmedYear) {
+      errors.year = "Ingresa el ejercicio.";
+    } else if (!/^\d{4}$/.test(trimmedYear) || Number.isNaN(yearNumber)) {
+      errors.year = "El ejercicio debe tener 4 dígitos.";
+    } else if (yearNumber < 2000 || yearNumber > 2100) {
+      errors.year = "Ingresa un ejercicio entre 2000 y 2100.";
+    }
+
+    if (!formMonth) {
+      errors.month = "Selecciona el mes.";
+    } else {
+      const monthNumber = Number(formMonth);
+      if (!Number.isInteger(monthNumber) || monthNumber < 1 || monthNumber > 12) {
+        errors.month = "Selecciona un mes válido.";
+      }
+    }
+
+    if (errors.year || errors.month) {
+      setFormErrors(errors);
+      return;
+    }
+
+    setFormErrors({});
+    const monthNumber = Number(formMonth);
+    try {
+      await handleGenerateClick({ year: yearNumber, month: monthNumber });
+      setFormYear("");
+      setFormMonth("");
+      setTabValue("generar");
+    } catch {
+      // keep values so user can corregir inputs if request fails
     }
   };
 
