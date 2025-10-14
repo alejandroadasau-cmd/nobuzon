@@ -43,6 +43,30 @@ const TAX_DISPLAY: Record<TaxType, string> = {
   "Impuesto sobre Juegos con Apuestas": "Juegos con Apuestas",
 };
 
+const MONTH_OPTIONS = [
+  { label: "Enero", value: "1" },
+  { label: "Febrero", value: "2" },
+  { label: "Marzo", value: "3" },
+  { label: "Abril", value: "4" },
+  { label: "Mayo", value: "5" },
+  { label: "Junio", value: "6" },
+  { label: "Julio", value: "7" },
+  { label: "Agosto", value: "8" },
+  { label: "Septiembre", value: "9" },
+  { label: "Octubre", value: "10" },
+  { label: "Noviembre", value: "11" },
+  { label: "Diciembre", value: "12" },
+] as const;
+
+const toMonthPeriod = (year: number, month: number) => {
+  const startDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
+  const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
+  return {
+    periodStart: startDate.toISOString(),
+    periodEnd: endDate.toISOString(),
+  };
+};
+
 export default function Index() {
   const { data: pending = [], isLoading: loadingPending } = usePendingSIT({});
   const {
