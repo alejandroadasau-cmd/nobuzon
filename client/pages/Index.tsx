@@ -15,15 +15,6 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from "@/components/ui/popover";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   usePendingSIT,
@@ -32,7 +23,7 @@ import {
 } from "@/hooks/useSITData";
 import { useNavigate } from "react-router-dom";
 import { formatCurrencyMXN, formatRFC, formatDate } from "@/lib/formatters";
-import type { GenerateRequestPayload, TaxType } from "@shared/api";
+import type { TaxType } from "@shared/api";
 import { toast } from "@/hooks/use-toast";
 import { CheckCircle, XCircle, Clock } from "lucide-react";
 
@@ -41,30 +32,6 @@ const TAX_DISPLAY: Record<TaxType, string> = {
     "Adquisición de Bienes Inmuebles",
   "Impuesto sobre Vehículos Nuevos": "Vehículos Nuevos",
   "Impuesto sobre Juegos con Apuestas": "Juegos con Apuestas",
-};
-
-const MONTH_OPTIONS = [
-  { label: "Enero", value: "1" },
-  { label: "Febrero", value: "2" },
-  { label: "Marzo", value: "3" },
-  { label: "Abril", value: "4" },
-  { label: "Mayo", value: "5" },
-  { label: "Junio", value: "6" },
-  { label: "Julio", value: "7" },
-  { label: "Agosto", value: "8" },
-  { label: "Septiembre", value: "9" },
-  { label: "Octubre", value: "10" },
-  { label: "Noviembre", value: "11" },
-  { label: "Diciembre", value: "12" },
-] as const;
-
-const toMonthPeriod = (year: number, month: number) => {
-  const startDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
-  const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
-  return {
-    periodStart: startDate.toISOString(),
-    periodEnd: endDate.toISOString(),
-  };
 };
 
 export default function Index() {
@@ -79,10 +46,6 @@ export default function Index() {
   const navigate = useNavigate();
   const [selectedBatch, setSelectedBatch] = useState<any | null>(null);
   const [viewOpen, setViewOpen] = useState(false);
-  const [tabValue, setTabValue] = useState<"generar" | "nuevo">("nuevo");
-  const [formYear, setFormYear] = useState("");
-  const [formMonth, setFormMonth] = useState("");
-  const [formErrors, setFormErrors] = useState<{ year?: string; month?: string }>({});
 
   const totalPending = pending.length;
   const allIds = useMemo(() => pending.map((p) => p.id), [pending]);
@@ -113,9 +76,7 @@ export default function Index() {
   };
 
   // Start generation and navigate to processing screen
-  const handleGenerateClick = async (
-    period?: { year: number; month: number },
-  ) => {
+  const handleGenerateClick = async () => {
     // refresh pending ids from server when generating
     let ids = allIds;
     try {
@@ -135,21 +96,12 @@ export default function Index() {
 
     try {
       // trigger generation on server
-      const payload: GenerateRequestPayload = {
+      const result = await generate.mutateAsync({
         ids,
         observation: observation.trim() || undefined,
         generatedBy: generatedBy.trim() || undefined,
         extraRequirementTypes: extraTypesSelected,
-      };
-      if (period) {
-        const { periodStart, periodEnd } = toMonthPeriod(
-          period.year,
-          period.month,
-        );
-        payload.periodStart = periodStart;
-        payload.periodEnd = periodEnd;
-      }
-      const result = await generate.mutateAsync(payload);
+      });
 
       const batch = result?.batch;
       const generatedItems = Array.isArray(result?.generated)
@@ -219,51 +171,6 @@ export default function Index() {
         description: "Error al generar requerimientos.",
         variant: "destructive",
       });
-      throw err;
-    }
-  };
-
-  const handleSubmitNuevoProceso = async (
-    event: FormEvent<HTMLFormElement>,
-  ) => {
-    event.preventDefault();
-    if ((generate as any).isPending || (generate as any).isLoading) return;
-
-    const trimmedYear = formYear.trim();
-    const errors: { year?: string; month?: string } = {};
-    const yearNumber = Number(trimmedYear);
-
-    if (!trimmedYear) {
-      errors.year = "Ingresa el ejercicio.";
-    } else if (!/^\d{4}$/.test(trimmedYear) || Number.isNaN(yearNumber)) {
-      errors.year = "El ejercicio debe tener 4 dígitos.";
-    } else if (yearNumber < 2000 || yearNumber > 2100) {
-      errors.year = "Ingresa un ejercicio entre 2000 y 2100.";
-    }
-
-    if (!formMonth) {
-      errors.month = "Selecciona el mes.";
-    } else {
-      const monthNumber = Number(formMonth);
-      if (!Number.isInteger(monthNumber) || monthNumber < 1 || monthNumber > 12) {
-        errors.month = "Selecciona un mes válido.";
-      }
-    }
-
-    if (errors.year || errors.month) {
-      setFormErrors(errors);
-      return;
-    }
-
-    setFormErrors({});
-    const monthNumber = Number(formMonth);
-    try {
-      await handleGenerateClick({ year: yearNumber, month: monthNumber });
-      setFormYear("");
-      setFormMonth("");
-      setTabValue("generar");
-    } catch {
-      // keep values so user can corregir inputs if request fails
     }
   };
 
@@ -333,74 +240,8 @@ export default function Index() {
           <GeneracionMasivaHeader />
         </div>
 
-        <Tabs
-          value={tabValue}
-          onValueChange={(value) => {
-            if (value === "generar" || value === "nuevo") {
-              setTabValue(value as "generar" | "nuevo");
-            }
-          }}
-        >
-          <TabsList className="bg-emerald-100/50">
-            <TabsTrigger value="nuevo">Nuevo proceso</TabsTrigger>
-            <TabsTrigger value="generar">Bitácora</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="nuevo" className="mt-6">
-            <div className="grid gap-6 lg:grid-cols-[minmax(0,480px)_1fr]">
-              <div className="rounded-lg border bg-card p-6 shadow-sm">
-                <h3 className="text-lg font-semibold text-sky-900">
-                  Configura el nuevo proceso
-                </h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Indica el ejercicio y el mes que se procesará.
-                </p>
-                <form className="mt-6 space-y-5" onSubmit={handleSubmitNuevoProceso}>
-                  <div className="space-y-2">
-                    <Label htmlFor="ejercicio">Ejercicio</Label>
-                    <Input
-                      id="ejercicio"
-                      value={formYear}
-                      onChange={(event) => setFormYear(event.target.value)}
-                      placeholder="2025"
-                      inputMode="numeric"
-                      maxLength={4}
-                    />
-                    {formErrors.year ? (
-                      <p className="text-sm text-destructive">{formErrors.year}</p>
-                    ) : null}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="mes">Mes</Label>
-                    <Select value={formMonth} onValueChange={setFormMonth}>
-                      <SelectTrigger id="mes">
-                        <SelectValue placeholder="Selecciona un mes" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {MONTH_OPTIONS.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {formErrors.month ? (
-                      <p className="text-sm text-destructive">{formErrors.month}</p>
-                    ) : null}
-                  </div>
-                  <Button
-                    type="submit"
-                    className="w-full md:w-auto"
-                    disabled={
-                      (generate as any).isPending || (generate as any).isLoading
-                    }
-                  >
-                    Iniciar proceso
-                  </Button>
-                </form>
-              </div>
-            </div>
-          </TabsContent>
+        <Tabs defaultValue="generar">
+          <TabsList className="bg-emerald-100/50" />
 
           <TabsContent value="generar" className="mt-0">
             <div className="flex items-center justify-between mb-0">
@@ -412,7 +253,10 @@ export default function Index() {
                 variant="default"
                 size="sm"
                 className="text-sm px-3 py-2"
-                onClick={() => setTabValue("nuevo")}
+                disabled={
+                  (generate as any).isPending || (generate as any).isLoading
+                }
+                onClick={handleGenerateClick}
               >
                 Nuevo proceso
               </Button>
